@@ -1,0 +1,412 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 07.12.2019 11:23:40
+// Design Name: 
+// Module Name: Top
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+
+module clkDivider(input clk_in,output logic clk_out,input load,input enable);
+logic [64:0] cnt;
+
+initial begin
+    cnt = 64'b0;
+    clk_out = 0;
+end
+
+always@(posedge clk_in)
+begin
+    if(load)
+   if(cnt == 64'd1000000)
+     begin
+        clk_out = ~clk_out;
+        cnt = 64'd0;
+     end
+   else
+     begin
+        if(enable)
+        cnt  = cnt + 1'b1;
+     end
+end
+endmodule
+
+
+
+
+
+
+module masterClkDiv(input logic clk_in_Master,output logic clk_out_Master,output logic ledMaster,input load,input enable);
+
+logic [64:0] cnt;
+logic clkSlave;
+logic [64:0] ledCnt;
+
+initial begin
+
+    ledCnt = 64'd0;
+    cnt = 64'd0;
+    clk_out_Master = 0;
+    ledMaster = 0;
+end
+clkDivider clkDrive(clk_in_Master,clkSlave,load,enable);
+
+always@(posedge clkSlave)
+begin
+    if(load)
+   if(cnt == 64'd20)
+     begin
+        clk_out_Master = ~ clk_out_Master;
+        cnt = 64'd0;
+     end
+   else
+     begin
+        if(enable)
+        cnt  = cnt + 1'b1;
+     end
+end
+
+always@(posedge clk_in_Master)
+begin
+   if(load)
+   if(ledCnt == 64'd150000000)
+     begin
+        ledMaster = ~ ledMaster;
+        ledCnt = 64'd0;
+     end
+   else
+     begin
+         if(enable)
+        ledCnt  = ledCnt + 1'b1;
+     end
+end
+
+
+endmodule
+
+module SlaveClkDiv(input logic clk_in_Slave,output logic clk_out_Slave,output logic ledSlave,input load,input enable);
+
+logic [64:0] cnt;
+logic clkSlave;
+logic [64:0] ledCnt;
+
+initial begin
+
+    ledCnt = 64'd0;
+    cnt = 64'd0;
+    clk_out_Slave = 0;
+    ledSlave = 0;
+end
+
+clkDivider clkDrive(clk_in_Slave,clkSlave,load,enable);
+
+always@(posedge clkSlave)
+begin
+   if(cnt == 64'd10)
+     begin
+        if(load)
+        clk_out_Slave = ~ clk_out_Slave;
+        cnt = 64'd0;
+     end
+   else
+     begin
+        if(enable)
+        cnt  = cnt + 1'b1;
+     end
+end
+
+always@(posedge clk_in_Slave)
+begin
+    if(load)
+   if(ledCnt == 64'd50000000)
+     begin
+        ledSlave = ~ ledSlave;
+        ledCnt = 64'd0;
+     end
+   else
+     begin
+        if(enable)
+        ledCnt  = ledCnt + 1'b1;
+     end
+end
+
+
+endmodule
+
+
+module MasterReg(input clk_in_Master,input clr,input mMode,output logic out,
+output logic led,output logic [64:0] cnt,input load);
+
+
+logic led2;
+
+initial begin
+cnt = 64'd0;
+led = 0;
+
+
+end
+
+masterClkDiv div(clk_in_Master,out,led2,load,1'b1);
+
+
+always@(posedge out)
+begin
+
+if(mMode == 0)
+begin
+    cnt = 0;
+    led = 0;
+end
+else if(clr == 1)
+begin
+cnt = 0;
+end
+else
+begin
+    led = led2;
+    cnt = cnt + 64'b1;
+    
+    
+end
+end
+
+
+endmodule
+
+
+module SlaveReg(input clk_in_Slave,input clr,input mMode,output logic out,
+output logic led,output logic [64:0] cnt,input load);
+
+
+logic led2;
+
+initial begin
+cnt = 64'd0;
+led = 0;
+
+end
+
+SlaveClkDiv div(clk_in_Slave,out,led2,load,1'b1);
+
+
+always@(posedge out)
+begin
+if(mMode == 0)
+begin
+    cnt = 0;
+    led = 0;
+end
+else if(clr == 1)
+begin
+cnt = 0;
+end
+else
+begin
+    led = led2;
+    cnt = cnt + 64'b1;
+    
+    
+end
+end
+
+
+endmodule
+
+module sevSeger(input clk,input masterClk,input slaveClk,input masterMode,input slaveMode,input [64:0] masterCnt,input[64:0] slaveCnt,input masterLed,input slaveLed,
+output a, b, c, d, e, f, g, dp,
+output [3:0] an,output logic led,input select);
+
+logic [64:0] cnt;
+logic clkTemp;
+
+always@(posedge clk)
+if(masterMode == 1)
+begin
+    led = masterLed;
+    cnt = masterCnt;
+    clkTemp = masterClk;
+end
+else if( slaveMode == 1)
+begin
+    led = slaveLed;
+    cnt = slaveCnt;
+    clkTemp = slaveClk;
+end
+else
+    begin
+    led = 0;
+    cnt = 0;
+    end
+    
+ SevSeg_4digit seg(clk,cnt[3:0],cnt[7:4],cnt[11:8],cnt[15:12],a, b, c, d, e, f, g, dp,an);
+endmodule
+
+module decider(input clk,input masterModeD,input slaveModeD,input enableMasterD,input enableSlaveD,output logic masterOpenD,output logic slaveOpenD);
+
+always@(*)
+begin
+if(masterModeD == 1)
+    begin
+    masterOpenD = 1;
+    slaveOpenD = 0;
+    end
+else if( slaveModeD == 1)
+    begin
+    masterOpenD = 0;
+    slaveOpenD = 1;
+    end
+else if( enableMasterD == 1)
+    begin
+    masterOpenD = 1;
+    slaveOpenD = 0;
+    end
+else if( enableSlaveD == 1)
+   begin
+   masterOpenD = 0;
+   slaveOpenD = 1;
+   end
+else
+    begin
+     masterOpenD = 0;
+     slaveOpenD = 0;
+    end
+end
+
+endmodule
+
+
+module Top(input clk,input clr,input masterInput,input slaveInput,input masterEnable,input slaveEnable,
+output a, b, c, d, e, f, g, dp,
+output [3:0] an,logic ledM,output logic ledS);
+
+logic masterMode;
+logic slaveMode;
+logic masterLed;
+logic [64:0] masterCnt;
+logic masterClk;
+logic led;
+logic slaveLed;
+logic [64:0] slaveCnt;
+logic slaveClk;
+
+
+
+
+decider dec(clk,masterInput, slaveInput,masterEnable,slaveEnable,masterMode,slaveMode);
+MasterReg mreg(clk,clr,masterMode,masterClk,masterLed,masterCnt,1'b1);
+SlaveReg sreg(clk,clr,slaveMode,slaveClk,slaveLed,slaveCnt,1'b1);
+
+sevSeger seg( clk, masterClk, slaveClk, masterMode, slaveMode,  masterCnt, slaveCnt, masterLed, slaveLed,
+a, b, c, d, e, f, g, dp,
+ an,  led);
+
+always@(posedge clk)
+begin
+if(masterMode == 1)
+begin
+ledM = led;
+ledS = 0;
+end
+else if(slaveMode == 1)
+begin
+ledS = led;
+ledM = 0;
+end
+else
+begin
+ledS = 0;
+ledM = 0;
+end
+end
+
+endmodule
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 09.12.2019 10:41:23
+// Design Name: 
+// Module Name: Test
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module Test(
+    );
+    logic clk,clr, masterInput, slaveInput, masterEnable, slaveEnable;
+    logic a, b, c, d, e, f, g, dp;
+    logic [3:0] an;
+    logic ledM;
+    logic  ledS;
+      initial begin
+           clk = 0;
+           clr = 0;
+           masterInput = 0;
+           slaveInput = 0;
+           masterEnable = 0;
+           slaveEnable = 0;
+           /*ledM = 0;
+           ledS = 0;
+           a = 0;
+           b = 0;
+           c = 0;
+           d = 0;
+           e = 0;
+           e = 0;
+           f = 0;
+           g = 0;
+           dp = 0;
+           an = 0;*/
+           
+       end
+       
+        Top tp(  clk,clr, masterInput, slaveInput, masterEnable, slaveEnable,
+       a, b, c, d,
+        e, 
+        f, 
+        g, 
+        dp,
+        an, 
+        ledM,  
+        ledS);  
+        
+   
+     
+    always@(*) 
+      begin 
+      clk = ~clk; #0.000001   
+      masterInput = 1; #10  masterInput = 0; #10 
+      slaveInput =  1;  #10; slaveInput =  0;  #10 
+      masterEnable = 1; #10; masterEnable = 0; #10 
+      slaveEnable = 1; #10; slaveEnable = 0;
+      end
+      
+
+
+endmodule

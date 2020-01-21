@@ -1,0 +1,1120 @@
+module Top(
+    input clk, //100Mhz on Basys3
+	input resetSystem,
+	input execute,
+	input resetTimer,
+	//input reg execute,
+	//7-segment signals
+	output a, b, c, d, e, f, g, dp, 
+        output [3:0] an,    
+        
+        //matrix  4x4 keypad
+        output [3:0] keyb_row,
+        input  [3:0] keyb_col,
+	
+	output reset_out, //shift register's reset
+        output OE,     //output enable, active low 
+        output SH_CP,  //pulse to the shift register
+        output ST_CP,  //pulse to store shift register
+        output DS,     //shift register's serial input data
+        output [7:0] col_select // active column, active high
+		
+		
+		
+);
+logic key_valid;
+logic [3:0] key_value;
+keypad4X4 keypad4X4_inst0(
+	.clk(clk),
+	.keyb_row(keyb_row), // just connect them to FPGA pins, row scanner
+	.keyb_col(keyb_col), // just connect them to FPGA pins, column scanner
+    .key_value(key_value), //user's output code for detected pressed key: row[1:0]_col[1:0]
+    .key_valid(key_valid)  // user's output valid: if the key is pressed long enough (more than 20~40 ms), key_valid becomes '1' for just one clock cycle.
+);	
+logic floorInc1, floor1nc2, floorInc3,floorDec1,floorDec2,floorDec3 = 0;
+logic  [4:0] peopleFloor1;
+logic  [4:0] peopleFloor2;
+logic [4:0] peopleFloor3;
+logic [2:0] state = 2'b00;
+logic [3:0] available;
+logic [3:0] curMan;
+logic way;
+logic [27:0] counter4 = 27'b0;
+logic stop2;
+logic go = 0;
+logic more10;
+logic more100;
+ logic stop3;
+
+always@ (posedge clk)
+    begin
+  
+ if(resetSystem)
+ begin
+ peopleFloor1 = 0;
+ peopleFloor2 = 0;
+ peopleFloor3 = 0;
+
+ curMan = 3'b000;
+ available = 3'b100;
+ end
+ if (key_valid == 1'b1) begin
+            
+                case(key_value) 
+                4'b01_00:  //increments 1st digit of 7-segment.
+                if( peopleFloor1 < 4'b1100)
+                peopleFloor1 = peopleFloor1 + 1;
+                  
+            
+                4'b10_00:  //increments 1st digit of 7-segment.
+                if( peopleFloor2 < 4'b1100)
+                peopleFloor2 = peopleFloor2 + 1;
+              
+            
+                4'b11_00:  //increments 1st digit of 7-segment.
+                if( peopleFloor3 < 4'b1100)
+                peopleFloor3 = peopleFloor3 + 1;
+                 
+                     
+                4'b01_01:  //increments 1st digit of 7-segment.
+                if( peopleFloor1 > 4'b0000)
+                  peopleFloor1 = peopleFloor1 - 1;      
+                        
+                  4'b10_01:  //increments 2nd digit of 7-segment. 
+                  if( peopleFloor1 > 4'b0000) 
+                peopleFloor2 = peopleFloor2 - 1;
+                                
+                 4'b11_01:  //increments 2nd digit of 7-segment.
+                 if( peopleFloor1 > 4'b0000)
+               peopleFloor3 = peopleFloor3 - 1;
+                                
+              // default:
+                endcase
+            
+            end//if
+          
+if(execute == 1)
+ go = 1;
+ 
+if(go == 1)
+begin
+
+if( counter4 < 2*27'd49_999_999)
+begin
+counter4 = counter4 + 1;
+end
+
+if(counter4 == 2*27'd49_999_999)
+begin
+
+if(sec < 10)
+sec = sec + 1;
+else
+begin
+more10 = 1;
+sec = 0;
+end
+
+if(more10 == 1 && sec10 < 10)
+sec10 = sec10 + 1;
+if(sec10 > 9)
+begin
+sec10 = 0;
+more100 = 1;
+end
+
+if(more100 == 1 && sec100 < 10)
+sec100 = sec100 + 1;
+if(sec100 > 9)
+sec100  = 0;
+
+end
+
+if( state == 2'b00)
+begin
+    if(counter4 == 2*27'd49_999_999)
+begin
+ curMan = 0;
+  available = 3'b100;
+      
+      if( peopleFloor1 > 0)
+          begin
+          state = 2'b01;
+          counter4 = 0;
+          end
+          
+     else if( peopleFloor2 > 0)
+          begin
+          way = 1;
+          state = 2'b10;
+          counter4 = 0;
+          end
+
+     
+        
+    else  if(peopleFloor3 > 0 )
+                  begin
+                  way = 1;
+                  state = 2'b11;
+                  counter4 = 0;
+                  end
+       
+else
+   begin
+   sec = 0;
+   sec10 = 0;
+   sec100 = 0;
+    state = 2'b00;
+    counter4 = 0;
+    end
+  
+end
+end
+    
+  if( state == 2'b01)
+    begin
+    if(counter4 == 2*27'd49_999_999)
+begin
+
+            if( peopleFloor1 >= available)
+                begin
+                 peopleFloor1 = peopleFloor1 - available;
+                available = 3'b000;
+                curMan = 3'b100;
+                end
+          else
+    begin
+     curMan = peopleFloor1;
+    available = 3'b100 - peopleFloor1;
+    peopleFloor1 = 0;
+    end  
+    
+           way = 0;
+           state = 2'b00;
+           counter4 = 0;
+ 
+  
+end
+end
+ else if( state == 2'b10)
+    begin
+    if(counter4 == 2*27'd49_999_999)
+begin
+       
+       if(peopleFloor1 <= 0)
+       begin
+      if( peopleFloor2 >= 3'b100)
+                        begin
+                         peopleFloor3 = peopleFloor3 - 3'b100 ;
+                         curMan = 3'b100;
+                        end
+                  else
+            begin
+            curMan = peopleFloor2;
+             peopleFloor2 = 0;
+           
+            end  
+            
+          
+              
+                   
+              
+ 
+       
+        end
+        else
+        begin
+        way = 0;
+                           state = 2'b00;
+                           counter4 = 0;
+        end
+        end
+        end
+ else if( state == 2'b11)
+            begin
+            if(counter4 == 2*27'd49_999_999)
+        begin
+        if( peopleFloor1 <= 0 && peopleFloor2 <= 0)
+        begin
+       if( peopleFloor3 >= 3'b100)
+                        begin
+                         peopleFloor3 = peopleFloor3 - 3'b100 ;
+                         curMan = 3'b100;
+                        end
+                  else
+            begin
+            curMan = peopleFloor3;
+             peopleFloor3 = 0;
+           
+            end  
+            
+          
+              
+                   way = 0;
+                   state = 2'b00;
+                   counter4 = 0;
+              
+               
+        
+        end
+        end
+        else
+        begin
+       way = 0;
+         state = 2'b00;
+      counter4 = 0;
+      end
+        end
+        
+        end
+        end
+ //dont change
+//end
+         logic [4:0] sec;
+         logic [4:0] sec10;
+         logic [4:0] sec100;    
+          
+  logic[27:0] countersec;
+SevSeg_4digit seg(clk,sec,sec10,sec100,sevIn,a, b, c, d, e, f, g, dp,an);
+
+         
+          reg [24:0] totalTime;
+          reg clkTotal;
+
+logic [2:0] col_num;
+
+// initial value for RGB images:
+//	image_???[0]     : left column  .... image_???[7]     : right column
+//	image_???[?]'MSB : top line     .... image_???[?]'LSB : bottom line
+logic [0:7] [7:0] image_red = 
+{8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000};
+logic [0:7] [7:0]  image_green = 
+{8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000};
+logic [0:7] [7:0]  image_blue = 
+{8'b00000011, 8'b00000011, 8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000};
+
+
+   
+// This module displays 8x8 image on LED display module. 
+display_8x8 display_8x8_0(
+	.clk(clk),
+	
+	// RGB data for display current column
+	.red_vect_in(image_red[col_num]),
+	.green_vect_in(image_green[col_num]),
+	.blue_vect_in(image_blue[col_num]),
+	
+	.col_data_capture(), // unused
+	.col_num(col_num),
+	
+	// FPGA pins for display
+	.reset_out(reset_out),
+	.OE(OE),
+	.SH_CP(SH_CP),
+	.ST_CP(ST_CP),
+	.DS(DS),
+	.col_select(col_select)   
+);
+   
+// move the image to right every half a second to make an animation
+
+
+always@ (posedge clk)
+begin
+
+if( state == 2'b00)
+    begin
+    image_red[0] <= 8'b00000000;
+     image_red[1] <= 8'b00000000;
+     image_blue[0] <= 8'b00000011;
+     image_blue[1] <= 8'b00000011;
+    end
+    
+if( state == 2'b01)
+    begin
+    
+    if( curMan == 3'b000)
+    begin
+    image_blue[1] <= 8'b00001100;
+    image_blue[0] <= 8'b00001100;
+    end
+    
+    if( curMan == 3'b001)
+    begin
+   image_blue[1] <= 8'b00000100;
+   image_red[1] <=  8'b00001000;
+    end
+    
+       if( curMan == 3'b010)
+                     begin
+                     image_blue[1] <= 8'b00000000;
+                     image_red[1] <=  8'b00001100;
+                     end
+                     
+         if( curMan == 3'b011)
+                             begin
+              image_blue[1] <= 8'b00000000;
+              image_red[1] <=  8'b00001100;
+              image_red[0] <=  8'b00001000;
+              image_blue[0] <= 8'b00000100;
+                             end
+         if( curMan == 3'b100)
+                      begin
+          image_blue[1] <= 8'b00000000;
+          image_red[1] <=  8'b00001100;
+          image_red[0] <=  8'b00001000;
+          image_blue[0] <= 8'b00000000;
+                        end
+    
+    end
+ if( state == 2'b10)
+    begin
+      if( curMan == 3'b000)
+      begin
+      image_blue[1] <= 8'b00110000;
+      image_blue[0] <= 8'b00110000;
+      end
+      
+      if( curMan == 3'b001)
+      begin
+     image_blue[1] <= 8'b0001000;
+     image_red[1] <=  8'b00100000;
+      end
+      
+         if( curMan == 3'b010)
+                       begin
+                       image_blue[1] <= 8'b00000000;
+                       image_red[1] <=  8'b00110000;
+                       end
+                       
+           if( curMan == 3'b011)
+                               begin
+                image_blue[1] <= 8'b00000000;
+                image_red[1] <=  8'b00110000;
+                image_red[0] <=  8'b00100000;
+                image_blue[0] <= 8'b00010000;
+                               end
+           if( curMan == 3'b100)
+                        begin
+            image_blue[1] <= 8'b00000000;
+            image_red[1] <=  8'b00110000;
+            image_red[0] <=  8'b00100000;
+            image_blue[0] <= 8'b00000000;
+                          end
+    end
+    
+if( peopleFloor1 == 4'b0000)
+begin
+image_red[2][3] <= 0;
+image_red[2][2] <= 0;
+image_red[3][3] <= 0;
+image_red[3][2] <= 0;
+image_red[4][3] <= 0;
+image_red[4][2] <= 0;
+image_red[5][3] <= 0;
+image_red[5][2] <= 0;
+image_red[6][3] <= 0;
+image_red[6][2] <= 0;
+image_red[7][3] <= 0;
+image_red[7][2] <= 0;
+end
+if( peopleFloor1 == 4'b0001)
+begin
+image_red[2][3] <= 1;
+image_red[2][2] <= 0;
+image_red[3][3] <= 0;
+image_red[3][2] <= 0;
+image_red[4][3] <= 0;
+image_red[4][2] <= 0;
+image_red[5][3] <= 0;
+image_red[5][2] <= 0;
+image_red[6][3] <= 0;
+image_red[6][2] <= 0;
+image_red[7][3] <= 0;
+image_red[7][2] <= 0;
+end
+ if( peopleFloor1 == 4'b0010)
+begin
+image_red[2][3] <= 1;
+image_red[2][2] <= 1;
+image_red[3][3] <= 0;
+image_red[3][2] <= 0;
+image_red[4][3] <= 0;
+image_red[4][2] <= 0;
+image_red[5][3] <= 0;
+image_red[5][2] <= 0;
+image_red[6][3] <= 0;
+image_red[6][2] <= 0;
+image_red[7][3] <= 0;
+image_red[7][2] <= 0;
+end
+ if( peopleFloor1 == 4'b0011)
+begin
+image_red[2][3] <= 1;
+image_red[2][2] <= 1;
+image_red[3][3] <= 1;
+image_red[3][2] <= 0;
+image_red[4][3] <= 0;
+image_red[4][2] <= 0;
+image_red[5][3] <= 0;
+image_red[5][2] <= 0;
+image_red[6][3] <= 0;
+image_red[6][2] <= 0;
+image_red[7][3] <= 0;
+image_red[7][2] <= 0;
+end
+ if( peopleFloor1 == 4'b0100)
+begin
+image_red[2][3] <= 1;
+image_red[2][2] <= 1;
+image_red[3][3] <= 1;
+image_red[3][2] <= 1;
+image_red[4][3] <= 0;
+image_red[4][2] <= 0;
+image_red[5][3] <= 0;
+image_red[5][2] <= 0;
+image_red[6][3] <= 0;
+image_red[6][2] <= 0;
+image_red[7][3] <= 0;
+image_red[7][2] <= 0;
+end
+ if( peopleFloor1 == 4'b0101)
+begin
+image_red[2][3] <= 1;
+image_red[2][2] <= 1;
+image_red[3][3] <= 1;
+image_red[3][2] <= 1;
+image_red[4][3] <= 1;
+image_red[4][2] <= 0;
+image_red[5][3] <= 0;
+image_red[5][2] <= 0;
+image_red[6][3] <= 0;
+image_red[6][2] <= 0;
+image_red[7][3] <= 0;
+image_red[7][2] <= 0;
+end
+ if( peopleFloor1 == 4'b0110)
+begin
+image_red[2][3] <= 1;
+image_red[2][2] <= 1;
+image_red[3][3] <= 1;
+image_red[3][2] <= 1;
+image_red[4][3] <= 1;
+image_red[4][2] <= 1;
+image_red[5][3] <= 0;
+image_red[5][2] <= 0;
+image_red[6][3] <= 0;
+image_red[6][2] <= 0;
+image_red[7][3] <= 0;
+image_red[7][2] <= 0;
+end
+if( peopleFloor1 == 4'b0111)
+begin
+image_red[2][3] <= 1;
+image_red[2][2] <= 1;
+image_red[3][3] <= 1;
+image_red[3][2] <= 1;
+image_red[4][3] <= 1;
+image_red[4][2] <= 1;
+image_red[5][3] <= 1;
+image_red[5][2] <= 0;
+image_red[6][3] <= 0;
+image_red[6][2] <= 0;
+image_red[7][3] <= 0;
+image_red[7][2] <= 0;
+end
+if( peopleFloor1 == 4'b1000)
+begin
+image_red[2][3] = 1;
+image_red[2][2] = 1;
+image_red[3][3] = 1;
+image_red[3][2] = 1;
+image_red[4][3] = 1;
+image_red[4][2] = 1;
+image_red[5][3] = 1;
+image_red[5][2] = 1;
+image_red[6][3] = 0;
+image_red[6][2] = 0;
+image_red[7][3] = 0;
+image_red[7][2] = 0;
+end
+if( peopleFloor1 == 4'b1001)
+begin
+image_red[2][3] <= 1;
+image_red[2][2] <= 1;
+image_red[3][3] <= 1;
+image_red[3][2] <= 1;
+image_red[4][3] <= 1;
+image_red[4][2] <= 1;
+image_red[5][3] <= 1;
+image_red[5][2] <= 1;
+image_red[6][3] <= 1;
+image_red[6][2] <= 0;
+image_red[7][3] <= 0;
+image_red[7][2] <= 0;
+end
+if( peopleFloor1 == 4'b1010)
+begin
+image_red[2][3] <= 1;
+image_red[2][2] <= 1;
+image_red[3][3] <= 1;
+image_red[3][2] <= 1;
+image_red[4][3] <= 1;
+image_red[4][2] <= 1;
+image_red[5][3] <= 1;
+image_red[5][2] <= 1;
+image_red[6][3] <= 1;
+image_red[6][2] <= 1;
+image_red[7][3] <= 0;
+image_red[7][2] <= 0;
+end
+if( peopleFloor1 == 4'b1011)
+begin
+image_red[2][3] <= 1;
+image_red[2][2] <= 1;
+image_red[3][3] <= 1;
+image_red[3][2] <= 1;
+image_red[4][3] <= 1;
+image_red[4][2] <= 1;
+image_red[5][3] <= 1;
+image_red[5][2] <= 1;
+image_red[6][3] <= 1;
+image_red[6][2] <= 1;
+image_red[7][3] <= 1;
+image_red[7][2] <= 0;
+end
+if( peopleFloor1 == 4'b1100)
+begin
+image_red[2][3] <= 1;
+image_red[2][2] <= 1;
+image_red[3][3] <= 1;
+image_red[3][2] <= 1;
+image_red[4][3] <= 1;
+image_red[4][2] <= 1;
+image_red[5][3] <= 1;
+image_red[5][2] <= 1;
+image_red[6][3] <= 1;
+image_red[6][2] <= 1;
+image_red[7][3] <= 1;
+image_red[7][2] <= 1;
+end
+
+//second
+if( peopleFloor2 == 4'b0000)
+begin
+image_red[2][5] <= 0;
+image_red[2][4] <= 0;
+image_red[3][5] <= 0;
+image_red[3][4] <= 0;
+image_red[4][5] <= 0;
+image_red[4][4] <= 0;
+image_red[5][5] <= 0;
+image_red[5][4] <= 0;
+image_red[6][5] <= 0;
+image_red[6][4] <= 0;
+image_red[7][5] <= 0;
+image_red[7][4] <= 0;
+end
+if( peopleFloor2 == 4'b0001)
+begin
+image_red[2][5] <= 1;
+image_red[2][4] <= 0;
+image_red[3][5] <= 0;
+image_red[3][4] <= 0;
+image_red[4][5] <= 0;
+image_red[4][4] <= 0;
+image_red[5][5] <= 0;
+image_red[5][4] <= 0;
+image_red[6][5] <= 0;
+image_red[6][4] <= 0;
+image_red[7][5] <= 0;
+image_red[7][4] <= 0;
+end
+
+ if( peopleFloor2 == 4'b0010)
+begin
+image_red[2][5] <= 1;
+image_red[2][4] <= 1;
+image_red[3][5] <= 0;
+image_red[3][4] <= 0;
+image_red[4][5] <= 0;
+image_red[4][4] <= 0;
+image_red[5][5] <= 0;
+image_red[5][4] <= 0;
+image_red[6][5] <= 0;
+image_red[6][4] <= 0;
+image_red[7][5] <= 0;
+image_red[7][4] <= 0;
+end
+ if( peopleFloor2 == 4'b0011)
+begin
+image_red[2][5] <= 1;
+image_red[2][4] <= 1;
+image_red[3][5] <= 1;
+image_red[3][4] <= 0;
+image_red[4][5] <= 0;
+image_red[4][4] <= 0;
+image_red[5][5] <= 0;
+image_red[5][4] <= 0;
+image_red[6][5] <= 0;
+image_red[6][4] <= 0;
+image_red[7][5] <= 0;
+image_red[7][4] <= 0;
+end
+ if( peopleFloor2 == 4'b0100)
+begin
+image_red[2][5] <= 1;
+image_red[2][4] <= 1;
+image_red[3][5] <= 1;
+image_red[3][4] <= 1;
+image_red[4][5] <= 0;
+image_red[4][4] <= 0;
+image_red[5][5] <= 0;
+image_red[5][4] <= 0;
+image_red[6][5] <= 0;
+image_red[6][4] <= 0;
+image_red[7][5] <= 0;
+image_red[7][4] <= 0;
+end
+ if( peopleFloor2 == 4'b0101)
+begin
+image_red[2][5] <= 1;
+image_red[2][4] <= 1;
+image_red[3][5] <= 1;
+image_red[3][4] <= 1;
+image_red[4][5] <= 1;
+image_red[4][4] <= 0;
+image_red[5][5] <= 0;
+image_red[5][4] <= 0;
+image_red[6][5] <= 0;
+image_red[6][4] <= 0;
+image_red[7][5] <= 0;
+image_red[7][4] <= 0;
+end
+ if( peopleFloor2 == 4'b0110)
+begin
+image_red[2][5] <= 1;
+image_red[2][4] <= 1;
+image_red[3][5] <= 1;
+image_red[3][4] <= 1;
+image_red[4][5] <= 1;
+image_red[4][4] <= 1;
+image_red[5][5] <= 0;
+image_red[5][4] <= 0;
+image_red[6][5] <= 0;
+image_red[6][4] <= 0;
+image_red[7][5] <= 0;
+image_red[7][4] <= 0;
+end
+if( peopleFloor2 == 4'b0111)
+begin
+image_red[2][5] <= 1;
+image_red[2][4] <= 1;
+image_red[3][5] <= 1;
+image_red[3][4] <= 1;
+image_red[4][5] <= 1;
+image_red[4][4] <= 1;
+image_red[5][5] <= 1;
+image_red[5][4] <= 0;
+image_red[6][5] <= 0;
+image_red[6][4] <= 0;
+image_red[7][5] <= 0;
+image_red[7][4] <= 0;
+end
+if( peopleFloor2 == 4'b1000)
+begin
+image_red[2][5] <= 1;
+image_red[2][4] <= 1;
+image_red[3][5] <= 1;
+image_red[3][4] <= 1;
+image_red[4][5] <= 1;
+image_red[4][4] <= 1;
+image_red[5][5] <= 1;
+image_red[5][4] <= 1;
+image_red[6][5] <= 0;
+image_red[6][4] <= 0;
+image_red[7][5] <= 0;
+image_red[7][4] <= 0;
+end
+if( peopleFloor2 == 4'b1001)
+begin
+image_red[2][5] <= 1;
+image_red[2][4] <= 1;
+image_red[3][5] <= 1;
+image_red[3][4] <= 1;
+image_red[4][5] <= 1;
+image_red[4][4] <= 1;
+image_red[5][5] <= 1;
+image_red[5][4] <= 1;
+image_red[6][5] <= 1;
+image_red[6][4] <= 0;
+image_red[7][5] <= 0;
+image_red[7][4] <= 0;
+end
+if( peopleFloor2 == 4'b1010)
+begin
+image_red[2][5] <= 1;
+image_red[2][4] <= 1;
+image_red[3][5] <= 1;
+image_red[3][4] <= 1;
+image_red[4][5] <= 1;
+image_red[4][4] <= 1;
+image_red[5][5] <= 1;
+image_red[5][4] <= 1;
+image_red[6][5] <= 1;
+image_red[6][4] <= 1;
+image_red[7][5] <= 0;
+image_red[7][4] <= 0;
+end
+if( peopleFloor2 == 4'b1011)
+begin
+image_red[2][5] <= 1;
+image_red[2][4] <= 1;
+image_red[3][5] <= 1;
+image_red[3][4] <= 1;
+image_red[4][5] <= 1;
+image_red[4][4] <= 1;
+image_red[5][5] <= 1;
+image_red[5][4] <= 1;
+image_red[6][5] <= 1;
+image_red[6][4] <= 1;
+image_red[7][5] <= 1;
+image_red[7][4] <= 0;
+end
+if( peopleFloor2 == 4'b1100)
+begin
+image_red[2][5] <= 1;
+image_red[2][4] <= 1;
+image_red[3][5] <= 1;
+image_red[3][4] <= 1;
+image_red[4][5] <= 1;
+image_red[4][4] <= 1;
+image_red[5][5] <= 1;
+image_red[5][4] <= 1;
+image_red[6][5] <= 1;
+image_red[6][4] <= 1;
+image_red[7][5] <= 1;
+image_red[7][4] <= 1;
+end
+//third
+if( peopleFloor3 == 4'b0000)
+begin
+image_red[2][7] <= 0;
+image_red[2][6] <= 0;
+image_red[3][7] <= 0;
+image_red[3][6] <= 0;
+image_red[4][7] <= 0;
+image_red[4][6] <= 0;
+image_red[5][7] <= 0;
+image_red[5][6] <= 0;
+image_red[6][7] <= 0;
+image_red[6][6] <= 0;
+image_red[7][7] <= 0;
+image_red[7][6] <= 0;
+end
+if( peopleFloor3 == 4'b0001)
+begin
+image_red[2][7] <= 1;
+image_red[2][6] <= 0;
+image_red[3][7] <= 0;
+image_red[3][6] <= 0;
+image_red[4][7] <= 0;
+image_red[4][6] <= 0;
+image_red[5][7] <= 0;
+image_red[5][6] <= 0;
+image_red[6][7] <= 0;
+image_red[6][6] <= 0;
+image_red[7][7] <= 0;
+image_red[7][6] <= 0;
+end
+
+ if( peopleFloor3 == 4'b0010)
+begin
+image_red[2][7] <= 1;
+image_red[2][6] <= 1;
+image_red[3][7] <= 0;
+image_red[3][6] <= 0;
+image_red[4][7] <= 0;
+image_red[4][6] <= 0;
+image_red[5][7] <= 0;
+image_red[5][6] <= 0;
+image_red[6][7] <= 0;
+image_red[6][6] <= 0;
+image_red[7][7] <= 0;
+image_red[7][6] <= 0;
+end
+ if( peopleFloor3 == 4'b0011)
+begin
+image_red[2][7] <= 1;
+image_red[2][6] <= 1;
+image_red[3][7] <= 1;
+image_red[3][6] <= 0;
+image_red[4][7] <= 0;
+image_red[4][6] <= 0;
+image_red[7][7] <= 0;    
+image_red[7][6] <= 0;
+image_red[6][7] <= 0;
+image_red[6][6] <= 0;
+image_red[7][7] <= 0;
+image_red[7][6] <= 0;
+end
+ if( peopleFloor3 == 4'b0100)
+begin
+image_red[2][7] <= 1;
+image_red[2][6] <= 1;
+image_red[3][7] <= 1;
+image_red[3][6] <= 1;
+image_red[6][7] <= 0;
+image_red[6][6] <= 0;
+image_red[5][7] <= 0;
+image_red[5][6] <= 0;
+image_red[6][7] <= 0;
+image_red[6][6] <= 0;
+image_red[7][7] <= 0;
+image_red[7][6] <= 0;
+end
+
+ if( peopleFloor3 == 4'b0101)
+begin
+image_red[2][7] <= 1;
+image_red[2][6] <= 1;
+image_red[3][7] <= 1;
+image_red[3][6] <= 1;
+image_red[4][7] <= 1;
+image_red[4][6] <= 0;
+image_red[7][7] <= 0;
+image_red[7][6] <= 0;
+image_red[6][7] <= 0;
+image_red[6][6] <= 0;
+image_red[7][7] <= 0;
+image_red[7][6] <= 0;
+end
+ if( peopleFloor3 == 4'b0110)
+begin
+image_red[2][7] <= 1;
+image_red[2][6] <= 1;
+image_red[3][7] <= 1;
+image_red[3][6] <= 1;
+image_red[4][7] <= 1;
+image_red[4][6] <= 1;
+image_red[5][7] <= 0;
+image_red[5][6] <= 0;
+image_red[6][7] <= 0;
+image_red[6][6] <= 0;
+image_red[7][7] <= 0;
+image_red[7][6] <= 0;
+end
+if( peopleFloor3 == 4'b0111)
+begin
+image_red[2][7] <= 1;
+image_red[2][6] <= 1;
+image_red[3][7] <= 1;
+image_red[3][6] <= 1;
+image_red[4][7] <= 1;
+image_red[4][6] <= 1;
+image_red[5][7] <= 1;
+image_red[5][6] <= 0;
+image_red[6][7] <= 0;
+image_red[6][6] <= 0;
+image_red[7][7] <= 0;
+image_red[7][6] <= 0;
+end
+if( peopleFloor3 == 4'b1000)
+begin
+image_red[2][7] <= 1;
+image_red[2][6] <= 1;
+image_red[3][7] <= 1;
+image_red[3][6] <= 1;
+image_red[6][7] <= 1;
+image_red[6][6] <= 1;
+image_red[5][7] <= 1;
+image_red[5][6] <= 1;
+image_red[6][7] <= 0;
+image_red[6][6] <= 0;
+image_red[7][7] <= 0;
+image_red[7][6] <= 0;
+end
+if( peopleFloor3 == 4'b1001)
+begin
+image_red[2][7] <= 1;
+image_red[2][6] <= 1;
+image_red[3][7] <= 1;
+image_red[3][6] <= 1;
+image_red[4][7] <= 1;
+image_red[4][6] <= 1;
+image_red[5][7] <= 1;
+image_red[5][6] <= 1;
+image_red[6][7] <= 1;
+image_red[6][6] <= 0;
+image_red[7][7] <= 0;
+image_red[7][6] <= 0;
+end
+if( peopleFloor3 == 4'b1010)
+begin
+image_red[2][7] <= 1;
+image_red[2][6] <= 1;
+image_red[3][7] <= 1;
+image_red[3][6] <= 1;
+image_red[4][7] <= 1;
+image_red[4][6] <= 1;
+image_red[5][7] <= 1;
+image_red[5][6] <= 1;
+image_red[6][7] <= 1;
+image_red[6][6] <= 1;
+image_red[7][7] <= 0;
+image_red[7][6] <= 0;
+end
+if( peopleFloor3 == 4'b1011)
+begin
+image_red[2][7] <= 1;
+image_red[2][6] <= 1;
+image_red[3][7] <= 1;
+image_red[3][6] <= 1;
+image_red[4][7] <= 1;
+image_red[4][6] <= 1;
+image_red[5][7] <= 1;
+image_red[5][6] <= 1;
+image_red[6][7] <= 1;
+image_red[6][6] <= 1;
+image_red[7][7] <= 1;
+image_red[7][6] <= 0;
+end
+if( peopleFloor3 == 4'b1100)
+begin
+image_red[2][7] <= 1;
+image_red[2][6] <= 1;
+image_red[3][7] <= 1;
+image_red[3][6] <= 1;
+image_red[4][7] <= 1;
+image_red[4][6] <= 1;
+image_red[5][7] <= 1;
+image_red[5][6] <= 1;
+image_red[6][7] <= 1;
+image_red[6][6] <= 1;
+image_red[7][7] <= 1;
+image_red[7][6] <= 1;
+end
+ end
+ 
+
+  endmodule
+
+`timescale 1 ps / 1 ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: Hamzeh Ahangari
+// 
+// Create Date: 
+// Design Name: 
+// Module Name: 
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+// This module shows 4 decimal numbers on 4-digit 7-Segment.  
+// 4 digits are scanned with high speed, then you do not notice that every time 
+// only one of them is ON. dp is always off.
+
+// LED positions inside 7-segment
+//    A 
+//  F   B
+//    G
+//  E   C
+//    D      DP
+
+// digit positions on Basys3 :
+// in3(left), in2, in1, in0(right)
+
+(* keep_hierarchy = "yes" *) 
+module SevSeg_4digit(
+ input clk,
+ input [3:0] in0, in1, in2, in3, //user inputs for each digit (hexadecimal value)
+ output a, b, c, d, e, f, g, dp, // just connect them to FPGA pins (individual LEDs).
+ output [3:0] an   // just connect them to FPGA pins (enable vector for 4 digits, active low)
+ );
+ 
+// divide system clock (100Mhz for Basys3) by 2^N using a counter, which allows us to multiplex at lower speed
+localparam N = 18;
+logic [N-1:0] count = {N{1'b0}}; //initial value
+always@ (posedge clk)
+	count <= count + 1;
+
+ 
+logic [3:0]digit_val; // multiplexer of digits
+logic [3:0]digit_en;  // decoder of enable bits
+ 
+always_comb
+ begin
+ digit_en = 4'b1111; 
+ digit_val = in0; 
+ 
+  case(count[N-1:N-2]) //using only the 2 MSB's of the counter 
+    
+   2'b00 :  //select first 7Seg.
+    begin
+     digit_val = in0;
+     digit_en = 4'b1110;
+    end
+    
+   2'b01:  //select second 7Seg.
+    begin
+     digit_val = in1;
+     digit_en = 4'b1101;
+    end
+    
+   2'b10:  //select third 7Seg.
+    begin
+     digit_val = in2;
+     digit_en = 4'b1011;
+    end
+     
+   2'b11:  //select forth 7Seg.
+    begin
+     digit_val = in3;
+     digit_en = 4'b0111;
+    end
+  endcase
+ end
+ 
+
+//Convert digit value to LED vector. LEDs are active low.
+logic [6:0] sseg_LEDs; 
+always_comb
+ begin 
+  sseg_LEDs = 7'b1111111; //default
+  case(digit_val)
+   4'd0 : sseg_LEDs = 7'b1000000; //to display 0
+   4'd1 : sseg_LEDs = 7'b1111001; //to display 1
+   4'd2 : sseg_LEDs = 7'b0100100; //to display 2
+   4'd3 : sseg_LEDs = 7'b0110000; //to display 3
+   4'd4 : sseg_LEDs = 7'b0011001; //to display 4
+   4'd5 : sseg_LEDs = 7'b0010010; //to display 5
+   4'd6 : sseg_LEDs = 7'b0000010; //to display 6
+   4'd7 : sseg_LEDs = 7'b1111000; //to display 7
+   4'd8 : sseg_LEDs = 7'b0000000; //to display 8
+   4'd9 : sseg_LEDs = 7'b0010000; //to display 9
+   4'd10: sseg_LEDs = 7'b1111110; //to display a
+   4'd11: sseg_LEDs = 7'b1111101; //to display b
+   4'd12: sseg_LEDs = 7'b1111011; //to display c
+   4'd13: sseg_LEDs = 7'b1110111; //to display d
+   4'd14: sseg_LEDs = 7'b1101111; //to display e
+   4'd15: sseg_LEDs = 7'b1011111; //to display f   
+   default : sseg_LEDs = 7'b0111111; //dash
+  endcase
+ end
+ 
+assign an = digit_en; 
+assign {g, f, e, d, c, b, a} = sseg_LEDs; 
+assign dp = 1'b1; //turn dp off
+ 
+ 
+endmodule

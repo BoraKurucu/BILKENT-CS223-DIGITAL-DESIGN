@@ -1,0 +1,410 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 21.10.2019 01:23:06
+// Design Name: 
+// Module Name: BitSubs
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+module BitSubs(
+    input x,
+    input y,
+    input Bin,
+    output Diff,
+    output Bout
+    );
+logic xor1; 
+logic and1;
+logic and2;
+assign xor1 =  x ^ y;
+assign and1 =  ~x & y;
+assign Diff = xor1 ^ Bin;
+assign and2 = Bin & ~ xor1;
+assign Bout =  and1 | and2;
+endmodule
+
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 22.10.2019 14:04:55
+// Design Name: 
+// Module Name: BitSubsStr
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module BitSubsStr(
+  input x,
+  input y,
+  input Bin,
+  output Diff,
+  output Bout
+  );
+logic xor1; 
+logic and1;
+logic and2;
+xor(xor1,x,y);
+and(and1,~x,y);
+xor(Diff,xor1,Bin);
+and(and2,Bin,~ xor1);
+or(Bout,and1,and2);
+
+endmodule
+
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 21.10.2019 01:11:35
+// Design Name: 
+// Module Name: BitAdder
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module BitAdder(
+    input x,
+    input y,
+    input Cin,
+    output Sum,
+    output Cout
+    );
+        logic xor1;
+        logic and1;
+        logic and2;
+        assign xor1 =  x ^ y;
+        assign and1 = x & y;
+        assign and2 = Cin & xor1;
+        assign Sum = Cin ^ xor1;
+        assign Cout = and1 | and2;
+endmodule
+
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 22.10.2019 14:01:48
+// Design Name: 
+// Module Name: BitAdderStr
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module BitAdderStr(
+ input x,
+    input y,
+    input Cin,
+    output Sum,
+    output Cout
+    );
+        logic xor1;
+        logic and1;
+        logic and2;
+        xor(xor1,x,y);
+        and(and1,x,y);
+        and(and2,Cin,xor1);
+        xor(Sum,Cin,xor1);
+        or(Cout,and1,and2);
+        
+endmodule
+
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 21.10.2019 01:27:39
+// Design Name: 
+// Module Name: FullAdder2
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module FullAdder2(
+    input x,
+    input y,
+    input x1,
+    input y1,
+    input Cin,
+    output Sum0,
+    output Sum1,
+    output Cout
+    );
+     logic cout1,c2;
+     BitAdder ex1(x,y,Cin,Sum0,cout1);
+     BitAdder  ex2(x1,y1,cout1,Sum1,Cout);
+endmodule
+
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 21.10.2019 01:30:47
+// Design Name: 
+// Module Name: FullSubs
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module FullSubs(
+     input x,
+    input y,
+    input x1,
+    input y1,
+    input Bin,
+    output Diff0,
+    output Diff1,
+    output Bout
+    );
+    logic BorrowOut1,c2;
+         BitSubs ex1(x,y,Bin,Diff0,BorrowOut1);
+         BitSubs ex2(x1,y1,BorrowOut1,Diff1,Bout);
+endmodule
+
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 21.10.2019 23:16:44
+// Design Name: 
+// Module Name: TestFullAdd
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module TestFullAdd(
+    );
+    logic x,y,
+      x1, y1, Cin,
+     Sum0,Sum1, Cout;
+  FullAdder2 adder(x,y,x1,y1,Cin,Sum0,Sum1,Cout);
+  initial begin
+x = 0; y = 0; x1 = 0; y1 = 0; Cin = 0; #10;
+x = 0; y = 0; x1 = 0; y1 = 0; Cin = 1; #10;
+x = 0; y = 0; x1 = 0; y1 = 1; Cin = 0; #10;
+x = 0; y = 0; x1 = 1; y1 = 0; Cin = 0; #10;
+x = 0; y = 1; x1 = 0; y1 = 0; Cin = 0; #10;
+x = 1; y = 0; x1 = 0; y1 = 0; Cin = 0; #10;
+x = 0; y = 0; x1 = 0; y1 = 1; Cin = 1; #10;
+x = 0; y = 0; x1 = 1; y1 = 0; Cin = 1; #10;
+x = 0; y = 1; x1 = 0; y1 = 0; Cin = 1; #10;
+x = 1; y = 0; x1 = 0; y1 = 0; Cin = 1; #10;
+x = 0; y = 0; x1 = 0; y1 = 1; Cin = 0; #10;
+x = 0; y = 0; x1 = 0; y1 = 0; Cin = 0; #10;
+x = 0; y = 0; x1 = 1; y1 = 0; Cin = 0; #10;
+x = 0; y = 1; x1 = 0; y1 = 0; Cin = 0; #10;
+x = 1; y = 0; x1 = 0; y1 = 1; Cin = 0; #10;
+x = 1; y = 0; x1 = 0; y1 = 1; Cin = 1; #10;
+x = 1; y = 1; x1 = 0; y1 = 1; Cin = 1; #10;
+  end  
+endmodule
+
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 21.10.2019 23:15:28
+// Design Name: 
+// Module Name: TestBitAdd
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module TestBitAdd();
+logic a, b, c;
+logic Sum,Cout;
+// instantiate device under test
+BitAdder dut(a, b, c,Sum,Cout);
+// apply inputs one at a time
+initial begin
+a = 0; b = 0; c = 0; #10;
+c = 1; #10;
+b = 1; c = 0; #10;
+c = 1; #10;
+a = 1; b = 0; c = 0; #10;
+c = 1; #10;
+b = 1; c = 0; #10;
+c = 1; #10;
+c = 0;
+end
+endmodule
+
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 21.10.2019 22:57:03
+// Design Name: 
+// Module Name: TestBitSubs
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module TestBitSubs();
+logic a, b, c;
+logic Diff,Dout;
+// instantiate device under test
+BitSubs dut(a, b, c,Diff,Dout);
+// apply inputs one at a time
+initial begin
+a = 0; b = 0; c = 0; #10;
+c = 1; #10;
+b = 1; c = 0; #10;
+c = 1; #10;
+a = 1; b = 0; c = 0; #10;
+c = 1; #10;
+b = 1; c = 0; #10;
+c = 1; #10;
+c = 0;
+end
+endmodule
+
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 22.10.2019 00:04:16
+// Design Name: 
+// Module Name: TestFullSubs
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module TestFullSubs(
+    );
+    logic x,y,
+      x1, y1, Bin,
+     Diff0,Diff1, Dout;
+  FullSubs adder(x,y,x1,y1,Bin,Diff0,Diff1,Dout);
+  initial begin
+x = 0; y = 0; x1 = 0; y1 = 0; Bin = 0; #10;
+x = 0; y = 0; x1 = 0; y1 = 0; Bin = 1; #10;
+x = 0; y = 0; x1 = 0; y1 = 1; Bin = 0; #10;
+x = 0; y = 0; x1 = 1; y1 = 0; Bin = 0; #10;
+x = 0; y = 1; x1 = 0; y1 = 0; Bin = 0; #10;
+x = 1; y = 0; x1 = 0; y1 = 0; Bin = 0; #10;
+x = 0; y = 0; x1 = 0; y1 = 1; Bin = 1; #10;
+x = 0; y = 0; x1 = 1; y1 = 0; Bin = 1; #10;
+x = 0; y = 1; x1 = 0; y1 = 0; Bin = 1; #10;
+x = 1; y = 0; x1 = 0; y1 = 0; Bin = 1; #10;
+x = 0; y = 0; x1 = 0; y1 = 1; Bin = 0; #10;
+x = 0; y = 0; x1 = 0; y1 = 0; Bin = 0; #10;
+x = 0; y = 0; x1 = 1; y1 = 0; Bin = 0; #10;
+x = 0; y = 1; x1 = 0; y1 = 0; Bin = 0; #10;
+x = 1; y = 0; x1 = 0; y1 = 1; Bin = 0; #10;
+x = 1; y = 0; x1 = 0; y1 = 1; Bin = 1; #10;
+x = 1; y = 1; x1 = 0; y1 = 1; Bin = 1; #10;
+  end  
+endmodule

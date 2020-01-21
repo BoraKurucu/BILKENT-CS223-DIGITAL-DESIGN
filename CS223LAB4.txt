@@ -1,0 +1,361 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 18.11.2019 19:03:48
+// Design Name: 
+// Module Name: driver
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module driver(
+input clk,
+input strt,
+input en,
+input left,
+input right,
+input  [1:0] spd,
+output logic o1,o2,o3,o4,
+output a, b, c, d, e, f, g, dp,
+output [3:0] an,
+output logic leftSignal,
+output logic rightSignal
+    );
+  logic [32:0] barage;
+
+  motor mot(clk,strt,~en,barage,o1,o2,o3,o4);
+  indicator ind(clk,left,right,barage,leftSignal,rightSignal);
+  SevSeg_4digit seg(clk,{1'b0,1'b0,spd},4'b0000,4'b0000,4'b0000,a, b, c, d, e, f, g, dp,an);
+endmodule
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 18.11.2019 20:41:08
+// Design Name: 
+// Module Name: test
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module test(
+
+    );
+    
+ logic clk,
+    strt,
+  en,
+ spd[1:0],
+  o1,o2,o3,o4,
+ a, b, c, d, e, f, g, dp,left,right,leftSignal,
+ rightSignal, clk2 ;
+  reg[3:0] cnt;
+  initial begin
+     strt = 1;
+     clk = 1;
+     en = 0;
+     cnt = 0;
+     end
+ 
+ logic[3:0] an;
+ always     
+       begin
+        clk = ~clk; cnt = cnt + 1;
+        if(cnt == 4'b0111)
+        begin
+        cnt = 4'b0;
+        en = ~en; 
+        end
+        #10;
+       end
+    driver driv(clk, 
+    strt,~en,left,
+    right,
+    {1'b0,1'b0},
+    o1,o2,
+    o3,o4,a, b, c, d, e, f, g, dp,an,leftSignal,
+        rightSignal, clk2 );
+    
+ 
+endmodule
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 18.11.2019 20:57:25
+// Design Name: 
+// Module Name: testcar
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module testcar(
+
+    );
+  logic clk,
+       strt,
+     rev,
+     o1,o2,o3,o4;
+     reg[3:0] cnt;
+     initial begin
+     strt = 1;
+     clk = 1;
+     rev = 0;
+     cnt = 0; #10;
+     end
+     always     
+       begin
+        clk = ~clk; cnt = cnt + 1;
+        if(cnt == 4'b0111)
+        begin
+        cnt = 4'b0;
+        rev = ~rev; 
+        end
+        #10;
+       end
+       
+       motor mot(clk, strt,rev,o1,o2,o3,o4);
+       
+    
+endmodule
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 18.11.2019 19:24:40
+// Design Name: 
+// Module Name: div
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module div( input clk, input [32:0] barage,output logic clk2
+
+    );
+ logic [32:0] cnt;
+initial begin
+clk2 = 0;
+cnt = 32'd0;
+end
+ 
+ always@(posedge clk)
+ begin
+ if(cnt == barage)
+ begin
+ clk2 = ~clk2;
+ cnt = 32'd0;
+ end
+ else
+ begin
+ cnt  = cnt + 1'b0;
+ end
+ end
+endmodule
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 19.11.2019 14:26:48
+// Design Name: 
+// Module Name: indicator
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module indicator(input clk,input left,input right,input [32:0] barage,output logic leftSignal,output logic rightSignal
+
+    );
+logic clk2;
+    logic [32:0] cnt;
+    
+    initial begin
+    clk2 = 0;
+    cnt = 32'd0;
+    end
+     
+     always@(posedge clk)
+     begin
+     if(cnt == 32'd5000000)
+     begin
+     clk2 = ~clk2;
+     cnt = 32'd0;
+     end
+     else
+     begin
+     cnt  = cnt + 1'b0;
+     end
+     end
+     
+    always @(posedge clk2)
+    begin
+    leftSignal = left;
+    rightSignal = right;       
+    end
+endmodule
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 18.11.2019 19:12:57
+// Design Name: 
+// Module Name: motor
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module motor(
+input clk,
+input strt,
+input rev,
+input [32:0] barage,
+output  logic o1,  o2, o3, o4
+    );
+typedef enum logic [1:0] {S0, S1, S2,S3} statetype;
+statetype state, nextstate;  
+logic clk2;
+logic [32:0] cnt;
+
+initial begin
+clk2 = 0;
+cnt = 32'd0;
+end
+ 
+ always@(posedge clk)
+ begin
+ if(cnt ==  32'd5000000)
+ begin
+ clk2 = ~clk2;
+ cnt = 32'd0;
+ end
+ else
+ begin
+ cnt  = cnt + 1'b0;
+ end
+ end
+ 
+always_ff @ (posedge clk2)
+ if (strt) 
+ state <= nextstate;
+ else 
+ state <= S0;
+
+always_comb
+case (state)
+S0:
+begin    
+if(strt == 1 && rev == 0)
+nextstate = S1;
+else if(strt == 0)
+nextstate = S0;
+else 
+nextstate = S3;
+end
+S1: 
+begin
+if(strt == 0)
+nextstate = S1;
+else if( rev == 0)
+nextstate = S2;
+else
+nextstate = S0;
+end
+S2:  
+begin
+if(strt == 0)
+nextstate = S2;
+else if( rev == 0)
+nextstate = S3;
+else
+nextstate = S1;
+end
+S3: 
+begin
+if(strt == 0)
+nextstate = S3;
+ else if( rev == 0)
+nextstate = S0;
+else
+nextstate = S2;
+end
+default: nextstate = S0;
+endcase   
+  
+always @(posedge clk2)
+begin
+case(state)
+S0: begin o1 = 1'b1; o2 = 1'b1; o3 = 1'b0; o4 = 1'b0; end
+S1:  begin o1 = 1'b0; o2 = 1'b1; o3 = 1'b1; o4 = 1'b0; end
+S2:  begin o1 = 1'b0; o2 = 1'b0; o3 = 1'b1; o4 = 1'b1; end
+S3:  begin o1 = 1'b1; o2 = 1'b0; o3 = 1'b0; o4 = 1'b1; end
+endcase
+end
+
+
+endmodule

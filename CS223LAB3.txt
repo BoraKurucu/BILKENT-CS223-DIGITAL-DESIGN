@@ -1,0 +1,317 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 04.11.2019 23:04:02
+// Design Name: 
+// Module Name: Behavioral2to1Mul
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module Behavioral2to1Mul(
+input logic i0,i1,s0,
+output logic o0
+    );
+assign o0 = s0 ? i1 : i0; 
+endmodule
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 04.11.2019 23:08:44
+// Design Name: 
+// Module Name: Behavioral4to1Mul
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module Behavioral4to1Mul(
+input logic i0,i1,i2,i3,s0,s1,
+output logic o0
+    );
+logic firstmul;
+logic secondmul;
+ Behavioral2to1Mul mul1(i0,i1,s1,firstmul);
+ Behavioral2to1Mul mul12(i2,i3,s1,secondmul);
+ Behavioral2to1Mul mull3(firstmul,secondmul,s0,o0);
+endmodule
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 04.11.2019 23:32:33
+// Design Name: 
+// Module Name: Structural8to1Mul
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module Structural8to1Mul(
+input i0,i1,i2,i3,i4,i5,i6,i7,s0,s1,s2,
+output o0
+    );
+   logic firstmul;
+   logic secondmul;
+ Behavioral4to1Mul ex1(i0,i1,i2,i3,s1,s2,firstmul);
+ Behavioral4to1Mul ex2(i4,i5,i6,i7,s1,s2,secondmul);
+ logic and1;
+ logic and2;
+ and(and1,firstmul,~s0);
+ and(and2,secondmul,s0);
+ or(o0,and1,and2);
+ 
+endmodule
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 04.11.2019 22:48:44
+// Design Name: 
+// Module Name: Behavioral2to4Dec
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module Behavioral2to4Dec(
+input logic i0,i1,
+output o0,o1,o2,o3
+    );
+assign o0 = ~i1 & ~i0;
+assign o1 = ~i1 & i0;
+assign o2 = i1 & ~i0;
+assign o3 = i1 & i0;
+    
+endmodule
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 05.11.2019 01:31:22
+// Design Name: 
+// Module Name: TheFunction
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module TheFunction(
+input logic a,b,c,d,
+output logic o
+    );
+logic dec0,dec1,dec2,dec3;
+Behavioral2to4Dec ex(b,d,dec0,dec1,dec2,dec3);
+Structural8to1Mul ex2(dec0,dec0,dec3,dec1,dec0,dec0,1'b1,dec3,a,b,c,o);
+endmodule
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 04.11.2019 22:57:06
+// Design Name: 
+// Module Name: Behavioral2to4DecTest
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module Behavioral2to4DecTest(
+
+    );
+logic i0,i1,o0,o1,o2,o3;
+Behavioral2to4Dec test(i0,i1,o0,o1,o2,o3);
+initial begin
+i0 = 0; i1 = 0; #10;
+i0 = 1; #10;
+i1 = 1; i0 = 0; #10;
+i0 = 1; #10;
+end
+endmodule
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 05.11.2019 13:00:22
+// Design Name: 
+// Module Name: Behavioral4to1MulTest
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module Behavioral4to1MulTest(
+
+    );
+logic i0,i1,i2,i3,s0,s1,o0;
+Behavioral4to1Mul mul(i0,i1,i2,i3,s0,s1,o0);
+initial begin
+i0 = 0; i1 = 0; i2 = 0; i3 = 0; s0 = 0; s1 = 0; #10;
+i0 = 0; i1 = 0; i2 = 0; i3 = 1; s0 = 0; s1 = 1; #10;
+i0 = 0; i1 = 0; i2 = 1; i3 = 0; s0 = 1; s1 = 0; #10;
+i0 = 0; i1 = 0; i2 = 1; i3 = 1; s0 = 0; s1 = 0; #10;
+i0 = 1; i1 = 0; i2 = 1; i3 = 0; s0 = 0; s1 = 0; #10;
+i0 = 1; i1 = 1; i2 = 1; i3 = 0; s0 = 1; s1 = 1; #10;
+i0 = 0; i1 = 1; i2 = 1; i3 = 1; s0 = 1; s1 = 1; #10;
+
+
+end
+endmodule
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 04.11.2019 23:40:12
+// Design Name: 
+// Module Name: Structural8to1MulTest
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module Structural8to1MulTest(
+
+    );
+logic i0,i1,i2,i3,i4,i5,i6,i7,s0,s1,s2,
+ o0;
+ Structural8to1Mul mul(i0,i1,i2,i3,i4,i5,i6,i7,s0,s1,s2,o0);
+ initial begin
+ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 0; i6 = 0; i7 = 0; s0 = 0; s1 = 0; s2 = 0; #10;
+ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 0; i6 = 0; i7 = 0; s0 = 0; s1 = 0; s2 = 1; #10;
+ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 0; i6 = 0; i7 = 0; s0 = 0; s1 = 1; s2 = 0; #10;
+ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 0; i6 = 0; i7 = 0; s0 = 1; s1 = 0; s2 = 0; #10;
+ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 0; i6 = 0; i7 = 1; s0 = 0; s1 = 0; s2 = 0; #10;
+ i0 = 1; i1 = 1; i2 = 0; i3 = 0; i4 = 0; i5 = 0; i6 = 0; i7 = 0; s0 = 1; s1 = 1; s2 = 0; #10;
+ i0 = 0; i1 = 0; i2 = 0; i3 = 1; i4 = 1; i5 = 0; i6 = 1; i7 = 0; s0 = 1; s1 = 0; s2 = 1; #10;
+ i0 = 1; i1 = 0; i2 = 1; i3 = 1; i4 = 0; i5 = 1; i6 = 0; i7 = 1; s0 = 0; s1 = 1; s2 = 0; #10;
+ i0 = 1; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 0; i6 = 0; i7 = 1; s0 = 1; s1 = 0; s2 = 0; #10;
+ i0 = 0; i1 = 1; i2 = 1; i3 = 0; i4 = 0; i5 = 0; i6 = 1; i7 = 0; s0 = 0; s1 = 1; s2 = 0; #10; 
+ end
+endmodule
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 05.11.2019 01:27:47
+// Design Name: 
+// Module Name: TestFunction
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module TestFunction(
+
+    );
+ logic a,b,c,d,o;
+ TheFunction f(a,b,c,d,o);
+initial begin
+a = 0; b = 0; c = 0; d = 0; #10;
+a = 0; b = 0; c = 0; d = 1; #10;
+a = 0; b = 1; c = 1; d = 1; #10;
+a = 0; b = 1; c = 1; d = 0; #10;
+a = 0; b = 0; c = 1; d = 0; #10;
+a = 0; b = 1; c = 0; d = 0; #10;
+a = 1; b = 0; c = 0; d = 0; #10;
+a = 0; b = 0; c = 1; d = 1; #10;
+a = 0; b = 1; c = 1; d = 0; #10;
+a = 1; b = 1; c = 0; d = 0; #10;
+a = 1; b = 1; c = 0; d = 1; #10;
+a = 1; b = 1; c = 1; d = 1; #10;
+
+
+end
+endmodule

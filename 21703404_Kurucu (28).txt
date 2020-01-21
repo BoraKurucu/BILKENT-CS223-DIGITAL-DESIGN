@@ -1,0 +1,115 @@
+module TopModule( 
+K,L,M,clk,a, b, c, d, e, f, g, dp,an
+    );
+    input K,L, M;
+    logic W, X,Y, Z;
+    output a, b, c, d, e, f, g, dp;
+    output[3:0] an;
+    logic[3:0] WXYZ;
+    input clk;
+    
+   
+    VoteModule modul(K,L,M,W,X,Y,Z );
+     assign WXYZ = {W,X,Y,Z};   
+      
+    SevSeg_4digit dig(clk,WXYZ,WXYZ,WXYZ,WXYZ, a, b, c, d, e, f, g, dp,an);
+              
+endmodule
+
+module VoteModule(
+    input A,
+    input B,
+    input C,
+   output W,
+   output X,
+   output Y,
+    output Z
+ ); 
+    logic BandC;
+   
+    
+   
+         assign BandC= B & C;
+        assign Z = B;
+          muxDirect forY(B,~B,C,Y);
+       muxDirect forX(BandC,~BandC,A,X);
+          mux2 forW(BandC,A,W);
+         
+     
+   
+endmodule
+
+module muxDirect( a,b,s,o);
+input a,b,s;
+output o;
+assign o =  s ? ( b)
+:a;
+endmodule 
+
+module mux2( a,s,o);
+input a,s;
+output o;
+assign o = s?( a)
+:0;
+endmodule 
+
+module TestBench();
+logic K,L,M;
+logic [3:0]WXYZ;
+// instantiate device under tes
+VoteModule mod(K,L,M,WXYZ[3],WXYZ[2],WXYZ[1],WXYZ[0]);
+//S assign WXYZ = {WXYZ[0],WXYZ[1],WXYZ[2],WXYZ[3]};  
+// apply inputs one at a time
+initial begin
+K = 0; L = 0; M = 0; #10;
+M = 1; #10;
+L = 1; M = 0; #10;
+M = 1; #10;
+K = 1; L = 0; M = 0; #10;
+M = 1; #10;
+L = 1; M = 0; #10;
+M = 1; #10;
+$finish;
+end
+endmodule
+
+set_property PACKAGE_PIN W5 [get_ports clk]							
+	set_property IOSTANDARD LVCMOS33 [get_ports clk]
+	create_clock -add -name sys_clk_pin -period 10.00 -waveform {0 5} [get_ports clk]
+
+
+
+set_property PACKAGE_PIN V17 [get_ports {K}]					
+	set_property IOSTANDARD LVCMOS33 [get_ports {K}]
+set_property PACKAGE_PIN V16 [get_ports {L}]					
+	set_property IOSTANDARD LVCMOS33 [get_ports {L}]
+set_property PACKAGE_PIN W16 [get_ports {M}]					
+	set_property IOSTANDARD LVCMOS33 [get_ports {M}]
+	
+set_property PACKAGE_PIN W7 [get_ports {a}]     
+ set_property IOSTANDARD LVCMOS33 [get_ports {a}]
+set_property PACKAGE_PIN W6 [get_ports {b}]     
+ set_property IOSTANDARD LVCMOS33 [get_ports {b}]
+set_property PACKAGE_PIN U8 [get_ports {c}]     
+ set_property IOSTANDARD LVCMOS33 [get_ports {c}]
+set_property PACKAGE_PIN V8 [get_ports {d}]     
+ set_property IOSTANDARD LVCMOS33 [get_ports {d}]
+set_property PACKAGE_PIN U5 [get_ports {e}]     
+ set_property IOSTANDARD LVCMOS33 [get_ports {e}]
+set_property PACKAGE_PIN V5 [get_ports {f}]     
+ set_property IOSTANDARD LVCMOS33 [get_ports {f}]
+set_property PACKAGE_PIN U7 [get_ports {g}]     
+ set_property IOSTANDARD LVCMOS33 [get_ports {g}]
+
+set_property PACKAGE_PIN V7 [get_ports dp]       
+ set_property IOSTANDARD LVCMOS33 [get_ports dp]
+
+set_property PACKAGE_PIN U2 [get_ports {an[0]}]     
+ set_property IOSTANDARD LVCMOS33 [get_ports {an[0]}]
+set_property PACKAGE_PIN U4 [get_ports {an[1]}]     
+set_property IOSTANDARD LVCMOS33 [get_ports {an[1]}]
+set_property PACKAGE_PIN V4 [get_ports {an[2]}]     
+ set_property IOSTANDARD LVCMOS33 [get_ports {an[2]}]
+set_property PACKAGE_PIN W4 [get_ports {an[3]}]     
+ set_property IOSTANDARD LVCMOS33 [get_ports {an[3]}]
+ 

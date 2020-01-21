@@ -1,0 +1,243 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 22.10.2018 20:25:49
+// Design Name: 
+// Module Name: Module1BitAdder
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module Module1BitAdder(
+    input x,
+    input y,
+    input Cin,
+    output Sum,
+    output Cout
+    );
+        logic xor1;
+        logic and1;
+        logic and2;
+        assign xor1 =  x ^ y;
+        assign and1 = x & y;
+        assign and2 = Cin & xor1;
+        assign Sum = Cin ^ xor1;
+        assign Cout = and1 | and2;
+endmodule
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 22.10.2018 20:26:48
+// Design Name: 
+// Module Name: TestBench
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module TestBench();
+logic a, b, c;
+logic sum,cout;
+// instantiate device under test
+Module1BitAdder dut(a, b, c, sum,cout);
+// apply inputs one at a time
+initial begin
+a = 0; b = 0; c = 0; #10;
+c = 1; #10;
+b = 1; c = 0; #10;
+c = 1; #10;
+a = 1; b = 0; c = 0; #10;
+c = 1; #10;
+b = 1; c = 0; #10;
+c = 1; #10;
+end
+endmodule
+
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 22.10.2018 20:31:23
+// Design Name: 
+// Module Name: TopModule
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module TopModule(
+    input x,
+    input y,
+    input Cin,
+    output Sum,
+    output Cout
+    );
+     logic xor1;
+       logic and1;
+       logic and2;
+       xor(xor1,x,y);
+       and(and1,x,y);
+       xor(xor2,xor1,Cin);
+       and(and2,xor1,Cin);
+       xor(Sum,Cin,xor1);
+       or(Cout,and2,and1);
+endmodule
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 10/25/2018 09:43:11 AM
+// Design Name: 
+// Module Name: TestBench
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module TestBench();
+logic a,b,c;
+logic sum,cout;
+// instantiate device under test
+TopModule  dut2(a, b, c, sum,cout);
+// apply inputs one at a time
+initial begin
+a = 0; b = 0; c = 0; #10;
+c = 1; #10;
+b = 1; c = 0; #10;
+c = 1; #10;
+a = 1; b = 0; c = 0; #10;
+c = 1; #10;
+b = 1; c = 0; #10;
+c = 1; #10;
+end
+endmodule
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 22.10.2018 20:39:21
+// Design Name: 
+// Module Name: Adder2Bit
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module Adder2Bit(
+    input x,
+    input y,
+    input x1,
+    input y1,
+    input Cin,
+    output Sum0,
+    output Sum1,
+    output Cout
+    );
+     logic c1,c2;
+     BitAdder ex1(x,y,Cin,c1,Sum0);
+     BitAdder  ex2(x1,y1,c1,Cout,Sum1);
+endmodule
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 10/25/2018 09:51:21 AM
+// Design Name: 
+// Module Name: TestBench
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module TestBench();
+logic a0, b0,a1,b1,ci;
+   logic sum1,sum0,cout;
+    Adder2Bit ex(a0,b0,a1,b1,ci,sum0,sum1,cout);
+   
+   initial begin
+a0 = 0; b0 = 0; a1 = 0; b1 = 0; ci = 0; #10;
+a0 = 1; b0 = 0; a1 = 0; b1 = 0; ci = 0;#10;
+a0 = 0; b0 = 1; a1 = 0; b1 = 0; ci = 0;#10;
+a0 = 1; b0 = 1; a1 = 0; b1 = 0; ci = 0;#10;
+a0 = 0; b0 = 0; a1 = 1; b1 = 0; ci = 0;#10;
+a1 = 0; b0 = 0; a1 = 1; b1 = 0; ci = 0;#10;
+a0 = 1; b0 = 1; a1 = 1; b1 = 0; ci = 0;#10;
+a1 = 0; b0 = 1; a1 = 1; b1 = 0; ci = 0;#10;
+a0 = 1; b0 = 1; a1 = 1; b1 = 0; ci = 0;#10;
+a0 = 0; b0 = 0; a1 = 0; b1 = 1; ci = 0;#10;
+a0 = 1; b0 = 0; a1 = 0; b1 = 1; ci = 0;#10;
+a0 = 0; b0 = 1; a1 = 0; b1 = 1; ci = 0;#10;
+a0 = 1; b0 = 1; a1 = 0; b1 = 1; ci = 0;#10;
+a0 = 0; b0 = 0; a1 = 1; b1 = 1; ci = 0;#10;
+a0 = 1; b0 = 1; a1 = 0; b1 = 1; ci = 0;#10;
+a0 = 0; b0 = 1; a1 = 1; b1 = 1; ci = 0;#10;
+a0 = 1; b0 = 1; a1 = 1; b1 = 1; ci = 0;#10;
+a0 = 1; b0 = 1; a1 = 1; b1 = 1; ci = 1; 
+
+end
+
+endmodule
+
